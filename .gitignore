@@ -1,0 +1,6 @@
+*.png
+*.jpg
+data/
+node_modules/
+*.bak*
+*.backup*
