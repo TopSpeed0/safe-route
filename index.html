@@ -4686,5 +4686,21 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
+
+<!-- Legal Disclaimer -->
+<div id="disclaimerModal" style="position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:99999;display:none;justify-content:center;align-items:center;padding:16px">
+<div style="max-width:480px;width:100%;background:rgba(15,15,25,.97);border:1px solid rgba(108,180,238,.2);border-radius:14px;padding:24px 28px;color:#ccc;font-size:.88em;line-height:1.8;box-shadow:0 12px 40px rgba(0,0,0,.6)">
+  <h3 style="margin:0 0 12px;color:#ef4444">⚠️ תנאי שימוש</h3>
+  <p>אתר זה מספק <b>כלי עזר לתכנון מסלול בלבד</b>.</p>
+  <ul style="padding-right:20px;margin:8px 0">
+    <li><b>אינו מחליף את פיקוד העורף</b> או כל גורם ביטחוני רשמי.</li>
+    <li>בדקו <b>התראות בזמן אמת</b> באפליקציית פיקוד העורף לפני כל נסיעה.</li>
+    <li>הנתונים מבוססים על מידע ציבורי ועלולים להכיל אי דיוקים.</li>
+    <li><b>האתר לא אחראי</b> לכל נזק שייגרם כתוצאה משימוש באתר.</li>
+  </ul>
+  <div style="text-align:center;margin-top:16px"><button onclick="localStorage.setItem('saferoute_disclaimer','1');this.closest('#disclaimerModal').style.display='none'" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;padding:10px 30px;border-radius:8px;font-size:.95em;font-weight:700;cursor:pointer">הבנתי ומאשר ✅</button></div>
+</div></div>
+<script>if(!localStorage.getItem('saferoute_disclaimer'))document.getElementById('disclaimerModal').style.display='flex';</script>
+
 </body>
 </html>
