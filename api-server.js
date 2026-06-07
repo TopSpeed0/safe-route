@@ -12,8 +12,8 @@ const CSV_PATH = path.join(DATA_DIR, 'dleshem-alerts.csv');
 const CSV_URL = 'https://raw.githubusercontent.com/dleshem/israel-alerts-data/main/israel-alerts.csv';
 const REFRESH_INTERVAL = 6 * 60 * 60 * 1000; // 6 hours
 
-// Category mapping: 1→0 (rockets), 5→5 (UAV), 6→2 (infiltration)
-const CATEGORY_MAP = { '1': 0, '5': 5, '6': 2 };
+// Category mapping: 1→0 (rockets), 2→5 (UAV intrusion), 5→5 (UAV), 6→2 (infiltration), 10→2 (terrorist infiltration), 14→0 (early warning/Lebanon threat)
+const CATEGORY_MAP = { '1': 0, '2': 5, '5': 5, '6': 2, '10': 2, '14': 0 };
 const SKIP_CATEGORIES = new Set(['3', '4', '13']);
 
 // In-memory data
