@@ -682,6 +682,7 @@ header p{font-size:.85rem}
 <div id="riskLabel" style="font-size:.85rem;font-weight:700;margin-top:2px">-</div>
 <div id="threatIndicator" style="margin-top:4px;text-align:center"></div>
 <div id="ceasefireBanner" style="display:none;margin-top:8px;padding:8px 12px;border-radius:12px;background:linear-gradient(135deg,rgba(34,197,94,0.12),rgba(34,197,94,0.05));border:1px solid rgba(34,197,94,0.25);text-align:center;animation:cfPulse 3s ease-in-out infinite"></div>
+<div id="readinessIndicator" style="margin-top:10px;padding:10px 14px;border-radius:12px;text-align:center;font-size:.88rem;font-weight:700;line-height:1.5;display:none"></div>
 </div>
 </div>
 
@@ -2810,6 +2811,30 @@ async function fetchThreatScore(){
       }else{
         cfBanner.style.display='none';
       }
+    }
+    // Readiness indicator
+    var rdEl=document.getElementById('readinessIndicator');
+    if(rdEl){
+      var gs=d.score||0;
+      var rdIcon,rdText,rdBg,rdBorder,rdColor;
+      if(gs>=65){
+        rdIcon='🔴';rdText='מוכנות מלאה — שהה בקרבת מרחב מוגן';
+        rdBg='rgba(239,68,68,0.12)';rdBorder='rgba(239,68,68,0.35)';rdColor='#ef4444';
+      }else if(gs>=40){
+        rdIcon='🟠';rdText='מוכנות גבוהה — הכן את הממ״ד, סגור חלון ממ״ד';
+        rdBg='rgba(245,158,11,0.12)';rdBorder='rgba(245,158,11,0.35)';rdColor='#f59e0b';
+      }else if(gs>=16){
+        rdIcon='🟡';rdText='מוכנות מוגברת — וודא שהממ״ד נגיש';
+        rdBg='rgba(234,179,8,0.1)';rdBorder='rgba(234,179,8,0.25)';rdColor='#eab308';
+      }else{
+        rdIcon='🟢';rdText='שגרה — אין איומים מיוחדים';
+        rdBg='rgba(34,197,94,0.08)';rdBorder='rgba(34,197,94,0.2)';rdColor='#22c55e';
+      }
+      rdEl.style.display='block';
+      rdEl.style.background='linear-gradient(135deg,'+rdBg+',transparent)';
+      rdEl.style.border='1px solid '+rdBorder;
+      rdEl.style.color=rdColor;
+      rdEl.innerHTML=rdIcon+' '+rdText;
     }
     // Render breakdown card
     var bd=d.breakdown;
