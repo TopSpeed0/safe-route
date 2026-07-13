@@ -681,6 +681,13 @@ header p{font-size:.85rem}
 </div>
 <div id="riskLabel" style="font-size:.85rem;font-weight:700;margin-top:2px">-</div>
 <div id="threatIndicator" style="margin-top:4px;text-align:center"></div>
+<div style="margin-top:10px;text-align:center">
+<div style="font-size:.72rem;color:var(--text2);margin-bottom:2px">🌍 איום גאופוליטי</div>
+<div class="risk-gauge-wrap" style="padding:2px">
+<svg id="geoGauge" viewBox="-10 -10 220 170" width="140" style="display:block;margin:0 auto"></svg>
+</div>
+<div id="geoGaugeLabel" style="font-size:.78rem;font-weight:700;margin-top:1px">-</div>
+</div>
 <div id="ceasefireBanner" style="display:none;margin-top:8px;padding:8px 12px;border-radius:12px;background:linear-gradient(135deg,rgba(34,197,94,0.12),rgba(34,197,94,0.05));border:1px solid rgba(34,197,94,0.25);text-align:center;animation:cfPulse 3s ease-in-out infinite"></div>
 <div id="readinessIndicator" style="margin-top:10px;padding:10px 14px;border-radius:12px;text-align:center;font-size:.88rem;font-weight:700;line-height:1.5;display:none"></div>
 </div>
@@ -2795,6 +2802,8 @@ async function fetchThreatScore(){
         +'</div>';
       el.innerHTML='<span style="font-size:.7rem;color:var(--text2)">🌐 איום גאופוליטי ('+myRegion+'): <strong style="color:'+(myScore>=50?'var(--red)':'var(--text)')+'">'+Math.round(myScore)+'/100</strong> '+myLabel+'</span>'+regionHtml;
     }
+    // Render geopolitical gauge
+    try{ renderGeoGauge(myScore); }catch(e){}
     // Ceasefire banner
     var cfBanner=document.getElementById('ceasefireBanner');
     if(cfBanner){
@@ -4082,6 +4091,60 @@ function renderStreak(cityName){
   }
 }
 
+
+function renderGeoGauge(score){
+  var svg=document.getElementById('geoGauge');
+  if(!svg) return;
+  var risk=Math.max(0,Math.min(100,Math.round(score)));
+  var cx=100,cy=100,r=78;
+  var startDeg=225,rangeDeg=270;
+  var toRad=function(d){return d*Math.PI/180;};
+  function arcPath(from,to){
+    var a1=toRad(startDeg-(from/100)*rangeDeg);
+    var a2=toRad(startDeg-(to/100)*rangeDeg);
+    var x1=cx+r*Math.cos(a1),y1=cy-r*Math.sin(a1);
+    var x2=cx+r*Math.cos(a2),y2=cy-r*Math.sin(a2);
+    var large=(to-from)>50?1:0;
+    return 'M'+x1+','+y1+' A'+r+','+r+' 0 '+large+',1 '+x2+','+y2;
+  }
+  var needleDeg=startDeg-(risk/100)*rangeDeg;
+  var needleRad=toRad(needleDeg);
+  var needleLen=r-18;
+  var nx=cx+needleLen*Math.cos(needleRad);
+  var ny=cy-needleLen*Math.sin(needleRad);
+  var bRad1=toRad(needleDeg+90),bRad2=toRad(needleDeg-90);
+  var bx1=cx+4*Math.cos(bRad1),by1=cy-4*Math.sin(bRad1);
+  var bx2=cx+4*Math.cos(bRad2),by2=cy-4*Math.sin(bRad2);
+  var riskColor=risk>=60?'#ef4444':risk>=30?'#f59e0b':'#22c55e';
+  var ticks='';
+  for(var i=0;i<=100;i+=10){
+    var a=toRad(startDeg-(i/100)*rangeDeg);
+    var inner=r-8,outer=r+2;
+    var ix=cx+inner*Math.cos(a),iy=cy-inner*Math.sin(a);
+    var ox=cx+outer*Math.cos(a),oy=cy-outer*Math.sin(a);
+    var isMain=i%20===0;
+    ticks+='<line x1="'+ix+'" y1="'+iy+'" x2="'+ox+'" y2="'+oy+'" stroke="rgba(255,255,255,'+(isMain?0.4:0.15)+')" stroke-width="'+(isMain?2:1)+'"/>';
+    if(isMain){
+      var lx=cx+(r+14)*Math.cos(a),ly=cy-(r+14)*Math.sin(a);
+      ticks+='<text x="'+lx+'" y="'+ly+'" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,0.3)" font-size="9">'+i+'</text>';
+    }
+  }
+  svg.innerHTML=ticks
+    +'<path d="'+arcPath(0,30)+'" fill="none" stroke="rgba(34,197,94,0.3)" stroke-width="10" stroke-linecap="round"/>'
+    +'<path d="'+arcPath(30,60)+'" fill="none" stroke="rgba(245,158,11,0.3)" stroke-width="10" stroke-linecap="round"/>'
+    +'<path d="'+arcPath(60,100)+'" fill="none" stroke="rgba(239,68,68,0.3)" stroke-width="10" stroke-linecap="round"/>'
+    +'<polygon points="'+nx+','+ny+' '+bx1+','+by1+' '+bx2+','+by2+'" fill="'+riskColor+'" style="filter:drop-shadow(0 0 6px '+riskColor+')"/>'
+    +'<circle cx="'+cx+'" cy="'+cy+'" r="7" fill="'+riskColor+'" stroke="rgba(0,0,0,0.5)" stroke-width="2"/>'
+    +'<circle cx="'+cx+'" cy="'+cy+'" r="2.5" fill="#fff"/>'
+    +'<text x="'+cx+'" y="'+(cy+28)+'" text-anchor="middle" fill="'+riskColor+'" font-size="24" font-weight="800">'+risk+'</text>'
+    +'<text x="'+cx+'" y="'+(cy+42)+'" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="10">/ 100</text>';
+  var label=document.getElementById('geoGaugeLabel');
+  if(label){
+    var txt=risk>=70?'קריטי':risk>=50?'גבוה':risk>=30?'בינוני':'נמוך';
+    label.textContent=txt;
+    label.style.color=riskColor;
+  }
+}
 function renderRiskGauge(cityName){
   const periodAlerts=getAlertsForCity(cityName,alertEffectiveDays);
   const hours=new Array(24).fill(0);
