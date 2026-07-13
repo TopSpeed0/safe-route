@@ -2076,6 +2076,10 @@ async function init(){
     updateLastUpdateDisplay();
     await fetchThreatScore();
     setInterval(fetchThreatScore,300000); // refresh every 5 min
+    // Re-render risk gauge after all data loaded (fixes gauge=0 on reload)
+    if(alertSelectedCity){
+      try{ renderRiskGauge(alertSelectedCity.name); }catch(e){}
+    }
     startAutoRefresh();
     document.getElementById('loader').classList.add('hidden');
     // Auto-switch to tab from URL hash
