@@ -4249,12 +4249,13 @@ function renderRiskGauge(cityName){
     else if(lat>=31.2) cityRegionScore=regionScores.center>0?regionScores.center:geoThreat;  // Center
     else cityRegionScore=regionScores.south>0?regionScores.south:geoThreat;                   // South
   }
-  // Geo threat = background tension. Adds context but doesn't dominate.
-  // The risk meter is a PRACTICAL tool: "should I send my kid to class right now?"
-  // Geo adds 5-15 points max — enough to shift the needle, not enough to scare.
-  var geoAdd=Math.round(cityRegionScore*0.15);
-  geoAdd=Math.min(15,geoAdd); // cap at 15 — geo is context, not the main signal
-  risk=risk+geoAdd;
+  // RPG Diminishing Returns: geo = damage multiplier, alerts = armor
+  // No alerts (risk=0) = 0 armor → geo does full damage (×2.0)
+  // High alerts (risk=80) = full armor → geo barely adds (×1.0)
+  var armor=Math.min(1,risk/80);
+  var geoMultiplier=2.0-armor;
+  var geoAdd=Math.round(cityRegionScore*0.15*geoMultiplier);
+  risk=Math.min(80,risk+geoAdd); // geo+base capped at 80, pre-alert/active can override to 90/100
   
   // Pre-alert boost from oref direct
   if(typeof orefPreAlertActive!=='undefined' && orefPreAlertActive){
