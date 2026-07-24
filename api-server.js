@@ -566,6 +566,13 @@ const server = http.createServer(async (req, res) => {
           .map((tw) => ({
             ts: Number(tw.ts) || 0,
             raw_score: Number(tw.raw_score) || 0,
+            ...(Object.prototype.hasOwnProperty.call(tw, 'final_score') ? { final_score: Number(tw.final_score) || 0 } : {}),
+            ...(tw.relevance && typeof tw.relevance === 'object' ? { relevance: {
+              status: String(tw.relevance.status || ''),
+              topic: String(tw.relevance.topic || ''),
+              confidence: Number(tw.relevance.confidence) || 0,
+              reason_he: String(tw.relevance.reason_he || '').slice(0, 180),
+            }} : {}),
             handle: String(tw.handle || ''),
             name: String(tw.name || tw.handle || 'מקור לא ידוע'),
             flag: String(tw.flag || '📰'),
