@@ -224,14 +224,14 @@ function pollOref() {
           lastTzevaadomId = itemKey;
 
           const cities = Array.isArray(item.cities) ? item.cities : [];
-          if (cities.length === 0) continue;
+          if (cities.length === 0 || item.isDrill === true) continue;
 
           const ts = item.time || Math.floor(Date.now() / 1000);
           const alert = { id: ts, threatType: item.threat || 0, cities, ts };
           lastLiveAlert = alert;
 
-          // Also add to allAlerts so heatmap/stats reflect live data
-          addLiveToAllAlerts(cities, item.threat || 0, ts);
+          // New notifications are live and may notify monitored cities.
+          addLiveToAllAlerts(cities, item.threat || 0, ts, true);
 
           const msg = JSON.stringify({ type: 'alert', alert, ts });
           broadcast(msg);
@@ -270,7 +270,7 @@ function pollHistory() {
           if (Array.isArray(group.alerts)) {
             for (const item of group.alerts) {
               const cities = Array.isArray(item.cities) ? item.cities : [];
-              if (cities.length === 0) continue;
+              if (cities.length === 0 || item.isDrill === true) continue;
 
               const rawTime = item.time || Math.floor(Date.now() / 1000);
               const ts = rawTime;
@@ -278,15 +278,13 @@ function pollHistory() {
               const alert = { id: ts, threatType: item.threat || 0, cities, ts };
               lastLiveAlert = alert;
 
-              // Also add to allAlerts
-              addLiveToAllAlerts(cities, item.threat || 0, ts);
+              // History bootstrap is intentionally silent: this endpoint replays
+              // older alerts after every API restart and must never notify for them.
+              addLiveToAllAlerts(cities, item.threat || 0, ts, !isStartup);
 
               if (!isStartup) {
                 const msg = JSON.stringify({ type: 'alert', alert, ts });
                 broadcast(msg);
-                // Notify monitored cities
-                notifyTelegram(cities, ts);
-                notifyWhatsApp(cities, ts);
               }
               newCount++;
             }
@@ -352,14 +350,23 @@ function notifyTelegram(cities, ts) {
   req.end(body);
 }
 
-function addLiveToAllAlerts(cities, threatType, ts) {
+function addLiveToAllAlerts(cities, threatType, ts, shouldNotify = false) {
   // Check if already exists (by timestamp)
   if (allAlerts.some(a => a[3] === ts && a[2].length === cities.length)) return;
   allAlerts.push([liveAlertNextId++, threatType, cities, ts]);
   statsCache = null; // invalidate stats cache
-  // Notify on monitored cities
-  notifyTelegram(cities, ts);
-  notifyWhatsApp(cities, ts);
+
+  // History can surface an old group as "new" after a restart or upstream replay.
+  // Never send a life-safety notification for an event older than 10 minutes,
+  // future-dated by more than a minute, or bootstrap data.
+  const ageSeconds = Math.floor(Date.now() / 1000) - Number(ts);
+  const isFreshLiveEvent = ageSeconds >= -60 && ageSeconds <= 600;
+  if (shouldNotify && isFreshLiveEvent) {
+    notifyTelegram(cities, ts);
+    notifyWhatsApp(cities, ts);
+  } else if (shouldNotify && !isFreshLiveEvent) {
+    console.log(`[SafeRoute] Suppressed stale live-notification replay (age ${ageSeconds}s)`);
+  }
 }
 
 function broadcast(msg) {
