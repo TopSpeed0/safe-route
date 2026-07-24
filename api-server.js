@@ -556,6 +556,32 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // GET /api/tweets — sanitized latest monitor items for the public dashboard
+    if (pathname === '/api/tweets') {
+      cors(res);
+      try {
+        const raw = require('fs').readFileSync('/home/topspeed/threat-monitor/threat-state.json', 'utf8');
+        const state = JSON.parse(raw);
+        const tweets = (state.active_tweets || [])
+          .map((tw) => ({
+            ts: Number(tw.ts) || 0,
+            raw_score: Number(tw.raw_score) || 0,
+            handle: String(tw.handle || ''),
+            name: String(tw.name || tw.handle || 'מקור לא ידוע'),
+            flag: String(tw.flag || '📰'),
+            text: String(tw.text || ''),
+            keywords: Array.isArray(tw.keywords) ? tw.keywords.map(String).slice(0, 12) : [],
+          }))
+          .filter((tw) => tw.text)
+          .sort((a, b) => b.ts - a.ts)
+          .slice(0, 100);
+        sendJSON(res, { updated_at: Number(state.last_scan) || 0, tweets });
+      } catch (e) {
+        sendJSON(res, { updated_at: 0, tweets: [], error: 'No tweet data' });
+      }
+      return;
+    }
+
     // GET /api/alerts
     if (pathname === '/api/alerts') {
       cors(res);

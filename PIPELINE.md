@@ -8,4 +8,4 @@
 5. For API changes, restart the Safe Route API service only after verification.
 
 ## Latest change
-- 2026-07-24: Initialized pipeline documentation before adding the tweets dashboard tab.
+- 2026-07-24: Added the tweets dashboard tab: desktop label “ציוצים אחרונים”, mobile label “ציוצים”; safe public `/api/tweets` feed; source/type/time/impact/keyword/search/sort filters.

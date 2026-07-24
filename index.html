@@ -69,6 +69,20 @@ header p{color:var(--text2);font-size:.95rem}
 body{padding-bottom:80px}
 }
 
+
+/* Tweets dashboard */
+.tweets-dashboard{max-width:1120px;margin:0 auto}
+.tweets-hero{padding:20px;margin-bottom:14px;display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}
+.tweets-hero h2{font-size:1.25rem;margin-bottom:5px}.tweets-hero p{color:var(--text2);font-size:.84rem}
+.tweets-count{font-size:.8rem;color:var(--text2);white-space:nowrap}.tweets-count b{color:var(--blue);font-size:1.1rem}
+.tweets-filters{padding:14px 16px;margin-bottom:14px;display:grid;grid-template-columns:repeat(5,minmax(125px,1fr));gap:10px}
+.tweets-filters select,.tweets-filters input{width:100%;padding:9px 11px;background:var(--glass2);border:1px solid var(--border);border-radius:9px;color:var(--text);font:inherit;font-size:.82rem;outline:none}.tweets-filters input:focus,.tweets-filters select:focus{border-color:var(--blue)}
+.tweets-keywords{display:flex;gap:6px;flex-wrap:wrap;padding:0 2px 12px}.tweet-keyword{padding:5px 10px;border:1px solid var(--border);border-radius:16px;background:var(--glass2);color:var(--text2);cursor:pointer;font:inherit;font-size:.74rem}.tweet-keyword.active{border-color:var(--blue);color:#fff;background:rgba(59,130,246,.16)}
+.tweets-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.tweet-card{padding:16px;position:relative;overflow:hidden}.tweet-card::before{content:'';position:absolute;top:0;right:0;bottom:0;width:3px;background:var(--blue)}.tweet-card.risk::before{background:var(--red)}.tweet-card.calm::before{background:var(--green)}
+.tweet-head{display:flex;align-items:flex-start;gap:9px;margin-bottom:10px}.tweet-flag{font-size:1.25rem}.tweet-source{flex:1;min-width:0}.tweet-name{font-weight:700;font-size:.9rem}.tweet-handle,.tweet-time{font-size:.72rem;color:var(--text2)}.tweet-score{font-size:.73rem;font-weight:700;padding:4px 7px;border-radius:7px;background:rgba(59,130,246,.12);color:var(--blue);white-space:nowrap}.tweet-card.risk .tweet-score{background:rgba(239,68,68,.12);color:var(--red)}.tweet-card.calm .tweet-score{background:rgba(34,197,94,.12);color:var(--green)}
+.tweet-text{font-size:.88rem;line-height:1.55;white-space:pre-wrap;color:#dbe5f2}.tweet-meta{display:flex;gap:5px;flex-wrap:wrap;margin-top:12px}.tweet-tag{font-size:.7rem;padding:3px 7px;border-radius:10px;color:var(--text2);border:1px solid var(--border)}.tweets-empty{grid-column:1/-1;padding:40px;text-align:center;color:var(--text2)}
+@media(max-width:768px){.tweets-filters{grid-template-columns:1fr 1fr}.tweets-filters input{grid-column:1/-1}.tweets-list{grid-template-columns:1fr}.tweets-hero{padding:16px}.tweet-card{padding:14px}}
+
 /* Ballistic tab styles */
 .ballistic-section{padding:20px}
 .ballistic-section h2{font-size:1.2rem;margin-bottom:14px;color:#fff}
@@ -368,6 +382,7 @@ header p{font-size:.85rem}
 <button class="tab-btn" data-tab="ballistic" onclick="switchTab('ballistic')">🎯 כיוון בליסטי</button>
 <button class="tab-btn" data-tab="alerts" onclick="switchTab('alerts')">🔔 התראות חכמות</button>
 <button class="tab-btn" data-tab="game" onclick="switchTab('game')">🎮 משחק</button>
+<button class="tab-btn" data-tab="tweets" onclick="switchTab('tweets')">🐦 ציוצים אחרונים</button>
 </div>
 
 <!-- TAB: נסיעה (existing content) -->
@@ -1966,6 +1981,26 @@ drawGame();
 </script>
 
 
+<!-- TAB: Tweets dashboard -->
+<div class="tab-content" id="tab-tweets">
+  <div class="tweets-dashboard">
+    <div class="tweets-hero glass">
+      <div><h2>🐦 ציוצים אחרונים</h2><p>עדכונים מהמקורות שנקלטו במוניטור האיומים.</p></div>
+      <div class="tweets-count" id="tweetsCount">טוען עדכונים…</div>
+    </div>
+    <div class="tweets-filters glass">
+      <select id="tweetSource" aria-label="סינון לפי מקור"><option value="">כל המקורות</option></select>
+      <select id="tweetType" aria-label="סינון לפי סוג"><option value="">X + RSS</option><option value="rss">RSS / חדשות</option><option value="x">X</option></select>
+      <select id="tweetTime" aria-label="סינון לפי זמן"><option value="0">כל הזמנים</option><option value="1">שעה אחרונה</option><option value="6">6 שעות</option><option value="12">12 שעות</option><option value="24">24 שעות</option></select>
+      <select id="tweetRisk" aria-label="סינון לפי השפעה"><option value="">כל ההשפעות</option><option value="risk">מעלה סיכון</option><option value="calm">מוריד סיכון</option><option value="neutral">ללא שינוי</option></select>
+      <select id="tweetSort" aria-label="מיון"><option value="new">החדש ביותר</option><option value="risk">השפעה גבוהה</option></select>
+      <input id="tweetSearch" type="search" placeholder="חיפוש בטקסט או במקור…" aria-label="חיפוש ציוצים">
+    </div>
+    <div class="tweets-keywords" id="tweetsKeywords"></div>
+    <div class="tweets-list" id="tweetsList"><div class="tweets-empty glass">טוען ציוצים…</div></div>
+  </div>
+</div>
+
 <!-- Mobile Bottom Nav -->
 <div class="mobile-nav" id="mobileNav">
 <div class="mobile-nav-inner">
@@ -1973,6 +2008,7 @@ drawGame();
 <button class="mob-tab" data-tab="ballistic" onclick="switchTab('ballistic')"><span class="icon">🎯</span><span class="label">בליסטי</span></button>
 <button class="mob-tab" data-tab="alerts" onclick="switchTab('alerts')"><span class="icon">🔔</span><span class="label">התראות</span></button>
 <button class="mob-tab" data-tab="game" onclick="switchTab('game')"><span class="icon">🎮</span><span class="label">משחק</span></button>
+<button class="mob-tab" data-tab="tweets" onclick="switchTab('tweets')"><span class="icon">🐦</span><span class="label">ציוצים</span></button>
 </div>
 </div>
 
@@ -2924,6 +2960,7 @@ async function refreshData(){
     
     updateLastUpdateDisplay();
     await fetchThreatScore();
+    if(document.getElementById('tab-tweets').classList.contains('active')) await loadTweets();
     showToast('✅ נתונים עודכנו — '+allAlerts.length+' אזעקות','green');
   }catch(e){
     showToast('❌ שגיאה ברענון: '+e.message,'red');
@@ -2956,6 +2993,35 @@ function startAutoRefresh(){
   setInterval(updateLastUpdateDisplay,60*1000);
 }
 
+
+// ========== TWEETS DASHBOARD ==========
+var tweetsData=[],tweetKeyword='';
+function escHtml(value){return String(value||'').replace(/[&<>'"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]});}
+function relativeTime(ts){var m=Math.max(0,Math.floor(Date.now()/1000-ts));if(m<60)return 'עכשיו';if(m<3600)return 'לפני '+Math.floor(m/60)+' דק׳';if(m<86400)return 'לפני '+Math.floor(m/3600)+' שעות';return 'לפני '+Math.floor(m/86400)+' ימים';}
+async function loadTweets(){
+  var list=document.getElementById('tweetsList'); if(!list)return;
+  try{var data=await fetch('/safe-route/api/tweets',{cache:'no-cache'}).then(function(r){if(!r.ok)throw Error('טעינת ציוצים נכשלה');return r.json();});tweetsData=data.tweets||[];populateTweetFilters();renderTweets();}
+  catch(e){list.innerHTML='<div class="tweets-empty glass">לא ניתן לטעון ציוצים כרגע.</div>';}
+}
+function populateTweetFilters(){
+  var source=document.getElementById('tweetSource');if(!source)return;var current=source.value;
+  var sources=[...new Set(tweetsData.map(function(t){return t.name||t.handle;}).filter(Boolean))].sort();
+  source.innerHTML='<option value="">כל המקורות</option>'+sources.map(function(v){return '<option value="'+escHtml(v)+'">'+escHtml(v)+'</option>';}).join('');source.value=current;
+  var kws={};tweetsData.forEach(function(t){(t.keywords||[]).forEach(function(k){kws[k]=(kws[k]||0)+1;});});
+  document.getElementById('tweetsKeywords').innerHTML=Object.keys(kws).sort(function(a,b){return kws[b]-kws[a];}).slice(0,20).map(function(k){return '<button class="tweet-keyword '+(tweetKeyword===k?'active':'')+'" data-keyword="'+escHtml(k)+'">'+escHtml(k)+' <small>'+kws[k]+'</small></button>';}).join('');
+  document.querySelectorAll('.tweet-keyword').forEach(function(b){b.onclick=function(){tweetKeyword=tweetKeyword===b.dataset.keyword?'':b.dataset.keyword;populateTweetFilters();renderTweets();};});
+}
+function renderTweets(){
+  var list=document.getElementById('tweetsList');if(!list)return;
+  var source=document.getElementById('tweetSource').value,type=document.getElementById('tweetType').value,hours=Number(document.getElementById('tweetTime').value),risk=document.getElementById('tweetRisk').value,sort=document.getElementById('tweetSort').value,search=document.getElementById('tweetSearch').value.trim().toLowerCase(),now=Math.floor(Date.now()/1000);
+  var rows=tweetsData.filter(function(t){var kind=(t.handle||'').indexOf('rss_')===0?'rss':'x',state=t.raw_score>0?'risk':t.raw_score<0?'calm':'neutral',hay=(t.text+' '+t.name+' '+t.handle+' '+(t.keywords||[]).join(' ')).toLowerCase();return (!source||(t.name||t.handle)===source)&&(!type||kind===type)&&(!hours||now-t.ts<=hours*3600)&&(!risk||state===risk)&&(!tweetKeyword||(t.keywords||[]).indexOf(tweetKeyword)>=0)&&(!search||hay.indexOf(search)>=0);});
+  rows.sort(function(a,b){return sort==='risk'?Math.abs(b.raw_score)-Math.abs(a.raw_score)||b.ts-a.ts:b.ts-a.ts;});
+  document.getElementById('tweetsCount').innerHTML='<b>'+rows.length+'</b> מתוך '+tweetsData.length+' עדכונים';
+  if(!rows.length){list.innerHTML='<div class="tweets-empty glass">לא נמצאו ציוצים לפי הסינון.</div>';return;}
+  list.innerHTML=rows.map(function(t){var state=t.raw_score>0?'risk':t.raw_score<0?'calm':'neutral',score=t.raw_score>0?'+'+t.raw_score:t.raw_score,scoreText=t.raw_score>0?'מעלה סיכון':t.raw_score<0?'מוריד סיכון':'ניטרלי';return '<article class="tweet-card '+state+' glass"><div class="tweet-head"><span class="tweet-flag">'+escHtml(t.flag)+'</span><div class="tweet-source"><div class="tweet-name">'+escHtml(t.name)+'</div><div class="tweet-handle">@'+escHtml(t.handle)+' · <span class="tweet-time">'+relativeTime(t.ts)+'</span></div></div><span class="tweet-score">'+score+' '+scoreText+'</span></div><div class="tweet-text">'+escHtml(t.text)+'</div><div class="tweet-meta">'+(t.keywords||[]).map(function(k){return '<span class="tweet-tag">#'+escHtml(k)+'</span>';}).join('')+'</div></article>';}).join('');
+}
+function initTweetsDashboard(){['tweetSource','tweetType','tweetTime','tweetRisk','tweetSort'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('change',renderTweets);});var search=document.getElementById('tweetSearch');if(search)search.addEventListener('input',renderTweets);}
+
 // ========== TAB SYSTEM ==========
 function switchTab(tabId){
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
@@ -2974,6 +3040,7 @@ function switchTab(tabId){
   if(tabId==='travel'&&map) setTimeout(()=>map.invalidateSize(),100);
   if(tabId==='ballistic'&&bMap) setTimeout(()=>bMap.invalidateSize(),100);
   if(tabId==='game'){setTimeout(function(){if(window._gameResize)window._gameResize();},150);}
+  if(tabId==='tweets'&&!tweetsData.length) loadTweets();
 }
 
 // ========== BALLISTIC DIRECTION ==========
@@ -4772,6 +4839,7 @@ function restoreNotifState(){
 }
 
 // ========== INIT ==========
+document.addEventListener('DOMContentLoaded',function(){initTweetsDashboard();});
 document.addEventListener('DOMContentLoaded',init);
 
 // Register Service Worker for PWA
