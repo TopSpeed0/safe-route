@@ -824,7 +824,7 @@ header p{font-size:.85rem}
 <div class="tab-content" id="tab-game">
 
 <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px">
-<img src="game-logo.png" alt="Iron Dome Snake" style="width:32px;height:auto;filter:drop-shadow(0 0 6px rgba(59,130,246,0.5))">
+<img data-src="game-logo.png" alt="Iron Dome Snake" style="width:32px;height:auto;filter:drop-shadow(0 0 6px rgba(59,130,246,0.5))">
 <span style="font-size:1rem;font-weight:700;background:linear-gradient(135deg,#fff,#3b82f6,#22c55e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Iron Dome Snake</span>
 <span style="display:flex;gap:6px;font-size:.7rem;margin-right:8px">
 <span style="color:var(--blue)"><span id="gameScore" style="font-weight:700">0</span> נק</span>
@@ -845,7 +845,7 @@ header p{font-size:.85rem}
 <div style="display:flex;justify-content:center;align-items:center;gap:8px;direction:ltr">
 <!-- Left panel (desktop only) -->
 <!-- Decorative arcade image LEFT -->
-<div id="arcadeImgLeft" class="arcade-panel" style="display:none;flex-shrink:0;pointer-events:none;align-self:stretch"><img id="arcImgL" src="Frame%20background%20Lerft.png" style="width:auto;object-fit:contain;display:block"></div>
+<div id="arcadeImgLeft" class="arcade-panel" style="display:none;flex-shrink:0;pointer-events:none;align-self:stretch"><img id="arcImgL" data-src="Frame%20background%20Lerft.png" style="width:auto;object-fit:contain;display:block"></div>
 <!-- Stats panel LEFT -->
 <div id="arcadeLeft" class="arcade-panel" style="display:none;width:100px;flex-shrink:0;padding:8px;border-radius:10px;background:rgba(5,5,8,0.6);border:1px solid rgba(255,255,255,0.06);backdrop-filter:blur(6px)">
 <div style="font-size:.6rem;color:rgba(255,255,255,0.5);text-align:center;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">HP</div>
@@ -864,7 +864,7 @@ header p{font-size:.85rem}
 <div class="arc-stat" style="margin-top:6px"><span style="color:rgba(255,255,255,0.5)">🚀 Eaten</span><div id="arcMissiles" style="font-weight:800;color:var(--orange);font-size:1.1rem;text-align:center;text-shadow:0 0 8px rgba(249,115,22,0.5)">0</div></div>
 </div>
 <!-- Decorative arcade image RIGHT -->
-<div id="arcadeImgRight" class="arcade-panel" style="display:none;flex-shrink:0;pointer-events:none;align-self:stretch"><img id="arcImgR" src="Frame%20background%20right.png" style="width:auto;object-fit:contain;display:block"></div>
+<div id="arcadeImgRight" class="arcade-panel" style="display:none;flex-shrink:0;pointer-events:none;align-self:stretch"><img id="arcImgR" data-src="Frame%20background%20right.png" style="width:auto;object-fit:contain;display:block"></div>
 </div>
 
 <div id="gameOverlay" style="position:relative;margin-top:-200px;height:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:10">
@@ -880,7 +880,7 @@ header p{font-size:.85rem}
 <button onclick="toggleFullscreen()" style="padding:6px 10px;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);cursor:pointer;font-size:.85rem">⛶</button>
 <button id="bgBtn" onclick="cycleBg()" style="padding:6px 10px;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);cursor:pointer;font-size:.85rem" title="רקע">🌑</button>
 <button id="hardcoreBtn" onclick="toggleHardcore()" style="padding:4px 8px;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;transition:all .3s;display:flex;align-items:center;gap:3px">
-<img src="hardcore-icon.png" style="width:20px;height:20px;border-radius:3px">
+<img data-src="hardcore-icon.png" style="width:20px;height:20px;border-radius:3px">
 <span style="font-size:.65rem;color:var(--text2)" id="hardcoreLabel">NORMAL</span>
 </button>
 </div>
@@ -954,30 +954,29 @@ var gameTracks=[
   {name:'Dr. Wily Castle',url:'https://lambda.vgmtreasurechest.com/soundtracks/megaman-3-original-soundtrack/ruyjbcjl/17.%20Dr.%20Wily%20Castle.mp3'},
   {name:'Wily Stage 1-2',url:'https://lambda.vgmtreasurechest.com/soundtracks/megaman-3-original-soundtrack/guhaewvo/18.%20Dr.%20Wily%20Stage%201~2.mp3'}
 ];
-// Snake head images (4 directions)
+// Game art is deferred: route users should not download it on the landing screen.
 var snakeHeads={};
 var snakeHeadsLoaded=0;
-['up','down','left','right'].forEach(function(d){
-  snakeHeads[d]=new Image();
-  snakeHeads[d].src='snake-'+d+'.png';
-  snakeHeads[d].onload=function(){snakeHeadsLoaded++;};
-});
-var snakeBodyImg=new Image();
-snakeBodyImg.src='snake-body.png';
-var bodyImgLoaded=false;
-snakeBodyImg.onload=function(){bodyImgLoaded=true;};
-var jetImg=new Image();
-jetImg.src='jet-enemy.png';
-var jetImgLoaded=false;
-jetImg.onload=function(){jetImgLoaded=true;};
-var missileImg=new Image();
-missileImg.src='missile-food.png';
-var missileImgLoaded=false;
-missileImg.onload=function(){missileImgLoaded=true;};
-var droneImg=new Image();
-droneImg.src='drone-uav.png';
-var droneImgLoaded=false;
-droneImg.onload=function(){droneImgLoaded=true;};
+var snakeBodyImg=new Image(), bodyImgLoaded=false;
+var jetImg=new Image(), jetImgLoaded=false;
+var missileImg=new Image(), missileImgLoaded=false;
+var droneImg=new Image(), droneImgLoaded=false;
+var gameAssetsLoaded=false;
+function loadGameAssets(){
+  if(gameAssetsLoaded) return;
+  gameAssetsLoaded=true;
+  document.querySelectorAll('#tab-game [data-src]').forEach(function(img){ img.src=img.dataset.src; });
+  ['up','down','left','right'].forEach(function(d){
+    snakeHeads[d]=new Image();
+    snakeHeads[d].onload=function(){snakeHeadsLoaded++;};
+    snakeHeads[d].src='snake-'+d+'.png';
+  });
+  snakeBodyImg.onload=function(){bodyImgLoaded=true;}; snakeBodyImg.src='snake-body.png';
+  jetImg.onload=function(){jetImgLoaded=true;}; jetImg.src='jet-enemy.png';
+  missileImg.onload=function(){missileImgLoaded=true;}; missileImg.src='missile-food.png';
+  droneImg.onload=function(){droneImgLoaded=true;}; droneImg.src='drone-uav.png';
+}
+window._loadGameAssets=loadGameAssets;
 
 var gameAudio=new Audio();
 var currentTrack=0;
@@ -2110,7 +2109,6 @@ async function init(){
     // Process with default period (month)
     currentPeriodDays=30;
     processAlerts(currentPeriodDays);
-    initMap();
     setupAutocomplete();
     setupPeriodChips();
     setupAlertsCityAC();
@@ -2128,6 +2126,11 @@ async function init(){
     }
     startAutoRefresh();
     document.getElementById('loader').classList.add('hidden');
+    // Delay Leaflet construction, polygon parsing and map-tile downloads until first paint is complete.
+    const startTravelMap=()=>{ if(!map) initMap(); };
+    if(window.location.hash==='#travel' || !window.location.hash){
+      (window.requestIdleCallback||function(cb){setTimeout(cb,700);})(startTravelMap,{timeout:1500});
+    }
     // Auto-switch to tab from URL hash
     if(window.location.hash){
       var hashTab=window.location.hash.replace('#','');
@@ -3048,10 +3051,16 @@ function switchTab(tabId){
   if(tabId==='ballistic'&&!bMap){
     setTimeout(initBallisticMap,100);
   }
-  // Fix map render on tab switch
-  if(tabId==='travel'&&map) setTimeout(()=>map.invalidateSize(),100);
+  // Initialize heavyweight features only when their tab is actually opened.
+  if(tabId==='travel'){
+    if(!map) initMap();
+    else setTimeout(()=>map.invalidateSize(),100);
+  }
   if(tabId==='ballistic'&&bMap) setTimeout(()=>bMap.invalidateSize(),100);
-  if(tabId==='game'){setTimeout(function(){if(window._gameResize)window._gameResize();},150);}
+  if(tabId==='game'){
+    if(window._loadGameAssets) window._loadGameAssets();
+    setTimeout(function(){if(window._gameResize)window._gameResize();},150);
+  }
   if(tabId==='tweets'&&!tweetsData.length) loadTweets();
 }
 
