@@ -596,11 +596,17 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // GET /api/alerts
+    // GET /api/alerts?days=30 (default). Use days=all only for deliberate history analysis.
     if (pathname === '/api/alerts') {
+      const fullArchive = parsed.query.days === 'all';
+      const requestedDays = Number.parseInt(parsed.query.days, 10);
+      const days = fullArchive ? 0 : (Number.isFinite(requestedDays) && requestedDays > 0 ? Math.min(requestedDays, 3650) : 30);
+      const cutoff = days > 0 ? Math.floor(Date.now() / 1000) - days * 86400 : 0;
+      const alerts = cutoff ? allAlerts.filter((alert) => alert[3] >= cutoff) : allAlerts;
       cors(res);
       res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify(allAlerts));
+      res.setHeader('Cache-Control', 'no-store');
+      res.end(JSON.stringify(alerts));
       return;
     }
 

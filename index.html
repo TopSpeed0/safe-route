@@ -2063,7 +2063,19 @@ drawGame();
 let CITIES={}, AREAS={}, POLYGONS_DATA={}, cityCounts={}, cityHours={};
 let allCityNames=[], cityByName={};
 let allAlerts=[]; // raw historical data: [alertId, threatType, [cities], timestamp]
+let loadedAlertDays=-1; // -1 = not loaded; 0 = full archive deliberately loaded
 window._threatScore=0; window._threatData=null;
+
+async function ensureAlertHistory(days, force=false){
+  const wantsFull=days===0;
+  if(!force&&((wantsFull&&loadedAlertDays===0)||(!wantsFull&&(loadedAlertDays===0||loadedAlertDays>=days)))) return;
+  const query=wantsFull?'all':String(Math.max(1,days));
+  const response=await fetch('/safe-route/api/alerts?days='+query,{cache:'no-store'});
+  if(!response.ok) throw new Error('טעינת ארכיון האזעקות נכשלה');
+  allAlerts=await response.json();
+  loadedAlertDays=wantsFull?0:days;
+}
+
 let currentPeriodDays=30; // default: month
 let currentThreat=-1; // -1 = all types
 let map, markersLayer, routeLayer, polygonLayer, highlightLayer;
@@ -2087,11 +2099,9 @@ async function init(){
     }
     allCityNames.sort((a,b)=>a.localeCompare(b,'he'));
     
-    // Load full historical data (21K+ alerts from 2021)
-    document.getElementById('loader').querySelector('p').textContent='טוען ארכיון אזעקות...';
-    const histData=await fetch('/safe-route/api/alerts').then(r=>r.json());
-    // Format: [[alertId, threatType, [cities], timestamp], ...]
-    allAlerts=histData;
+    // Load only the current 30-day view. Larger history is loaded on demand.
+    document.getElementById('loader').querySelector('p').textContent='טוען נתוני חודש אחרון...';
+    await ensureAlertHistory(30);
     
     // Load polygons before rendering map (needed for polygon-based markers)
     document.getElementById('loader').querySelector('p').textContent='טוען פוליגונים...';
@@ -2321,11 +2331,14 @@ function setupPeriodChips(){
   // ONLY target chips in the TRAVEL tab (#periodChips), not alert tab chips
   const pChips=document.querySelectorAll('#periodChips .p-chip');
   pChips.forEach(chip=>{
-    chip.onclick=()=>{
+    chip.onclick=async()=>{
       pChips.forEach(c=>c.classList.remove('active'));
       chip.classList.add('active');
       currentPeriodDays=parseInt(chip.dataset.days);
-      processAlerts(currentPeriodDays);
+      try{
+        await ensureAlertHistory(currentPeriodDays===-1?60:currentPeriodDays);
+        processAlerts(currentPeriodDays);
+      }catch(e){ showToast('❌ '+e.message,'red'); }
     };
   });
   
@@ -2947,8 +2960,7 @@ async function refreshData(){
   if(btn) btn.style.opacity='0.5';
   
   try{
-    var histData=await fetch('/safe-route/api/alerts',{cache:'no-cache'}).then(function(r){return r.json()});
-    allAlerts=histData;
+    await ensureAlertHistory(loadedAlertDays===-1?30:loadedAlertDays, true);
     lastUpdateTime=new Date();
     
     // Re-process current view
@@ -3746,7 +3758,7 @@ function selectAlertCity(name){
   renderAlertsDashboard();
 }
 
-function setAlertPeriod(days,btn){
+async function setAlertPeriod(days,btn){
   console.log('[SafeRoute] setAlertPeriod START, days=',days,'city=',alertSelectedCity?.name);
   alertPeriodDays=days;
   // Update button UI
@@ -3756,6 +3768,9 @@ function setAlertPeriod(days,btn){
   
   if(!alertSelectedCity){console.log('[SafeRoute] no city selected');return;}
   
+  try{ await ensureAlertHistory(days===-1?60:days); }
+  catch(e){ showToast('❌ '+e.message,'red'); return; }
+
   // Resolve effective days
   if(days===-1){
     var smart=calcSmartRange(alertSelectedCity.name);
