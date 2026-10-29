@@ -1,6 +1,6 @@
 #!/bin/bash
 # Collects alerts from tzevaadom API and appends new ones to a cumulative file
-DATA_DIR="/var/www/topspeed-0.duckdns.org/safe-route/data"
+DATA_DIR="/var/www/yitzhakbohadana.com/safe-route/data"
 CUMULATIVE="$DATA_DIR/alerts-cumulative.json"
 TEMP="$DATA_DIR/alerts-temp.json"
 
@@ -16,7 +16,7 @@ fi
 python3 << 'PY'
 import json, os
 
-data_dir = "/var/www/topspeed-0.duckdns.org/safe-route/data"
+data_dir = "/var/www/yitzhakbohadana.com/safe-route/data"
 cum_file = os.path.join(data_dir, "alerts-cumulative.json")
 temp_file = os.path.join(data_dir, "alerts-temp.json")
 
