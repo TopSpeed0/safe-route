@@ -9,6 +9,8 @@ const url = require('url');
 const PORT = 3850;
 const DATA_DIR = path.join(__dirname, 'data');
 const CSV_PATH = path.join(DATA_DIR, 'dleshem-alerts.csv');
+const ETAG_PATH = CSV_PATH + '.etag';
+const LIVE_ID_START = 999000;
 const CSV_URL = 'https://raw.githubusercontent.com/dleshem/israel-alerts-data/main/israel-alerts.csv';
 const REFRESH_INTERVAL = 6 * 60 * 60 * 1000; // 6 hours
 
@@ -68,6 +70,31 @@ function parseCSVLine(line) {
   return fields;
 }
 
+// Offsets only change on whole hours, so one Intl call per hour bucket gives the same result.
+const tzOffsetCache = new Map();
+function israelOffsetMs(raw) {
+  const key = Math.floor(raw.getTime() / 3600000);
+  let off = tzOffsetCache.get(key);
+  if (off === undefined) {
+    const ilStr = raw.toLocaleString('sv-SE', { timeZone: 'Asia/Jerusalem' });
+    off = new Date(ilStr + 'Z').getTime() - raw.getTime();
+    tzOffsetCache.set(key, off);
+  }
+  return off;
+}
+
+// Share one array per distinct city list; copy the key so it does not pin the whole CSV string.
+const cityListCache = new Map();
+function cityList(data) {
+  let list = cityListCache.get(data);
+  if (list === undefined) {
+    const key = Buffer.from(data, 'utf8').toString('utf8');
+    list = key.split(',').map(s => s.trim()).filter(Boolean);
+    cityListCache.set(key, list);
+  }
+  return list;
+}
+
 function parseCSV(csvText) {
   const lines = csvText.split('\n');
   const alerts = [];
@@ -91,7 +118,7 @@ function parseCSV(csvText) {
     if (threatType === undefined) continue;
 
     // Parse cities from data field
-    const cities = data.split(',').map(s => s.trim()).filter(Boolean);
+    const cities = cityList(data);
     if (cities.length === 0) continue;
 
     // Parse timestamp — CSV dates are in Israel local time (no TZ marker)
@@ -104,9 +131,7 @@ function parseCSV(csvText) {
       // Find Israel's offset for this specific date (handles DST automatically)
       // Create a date formatter in Israel timezone, compare with UTC
       const utcMs = raw.getTime();
-      const ilStr = raw.toLocaleString('sv-SE', {timeZone: 'Asia/Jerusalem'});
-      const ilAsUtc = new Date(ilStr + 'Z');
-      const offsetMs = ilAsUtc.getTime() - utcMs;
+      const offsetMs = israelOffsetMs(raw);
       // offsetMs = how many ms Israel is ahead of UTC for this date
       // Real UTC = parsed_as_utc - offset
       ts = Math.floor((utcMs - offsetMs) / 1000);
@@ -167,26 +192,67 @@ function httpsGet(reqUrl) {
   });
 }
 
+function httpsGetCond(reqUrl, etag) {
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(reqUrl);
+    const headers = { 'User-Agent': 'Mozilla/5.0 SafeRouteBot' };
+    if (etag) headers['If-None-Match'] = etag;
+    https.get({ hostname: parsed.hostname, path: parsed.pathname + parsed.search, headers }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.statusCode !== 304 && res.headers.location) {
+        res.resume();
+        return httpsGetCond(res.headers.location, etag).then(resolve, reject);
+      }
+      if (res.statusCode !== 200) {
+        res.resume();
+        return resolve({ status: res.statusCode });
+      }
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => resolve({ status: 200, buf: Buffer.concat(chunks), etag: res.headers.etag || null }));
+      res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
+// Keep live alerts that are newer than the CSV, so a refresh does not drop them.
+function setAlerts(parsed) {
+  let maxTs = 0;
+  for (const a of parsed) if (a[3] > maxTs) maxTs = a[3];
+  const live = allAlerts.filter(a => a[0] >= LIVE_ID_START && a[3] > maxTs);
+  allAlerts = live.length ? parsed.concat(live) : parsed;
+  statsCache = computeStats(allAlerts);
+}
+
+function loadCachedCSV() {
+  if (!fs.existsSync(CSV_PATH)) return false;
+  const t0 = Date.now();
+  setAlerts(parseCSV(fs.readFileSync(CSV_PATH, 'utf8')));
+  console.log(`[SafeRoute] Loaded ${allAlerts.length} alerts from cache in ${Date.now() - t0}ms`);
+  return allAlerts.length > 0;
+}
+
 async function loadCSV() {
-  console.log('[SafeRoute] Downloading CSV from GitHub...');
+  let etag = null;
   try {
-    const buf = await httpsGet(CSV_URL);
+    if (allAlerts.length && fs.existsSync(ETAG_PATH)) etag = fs.readFileSync(ETAG_PATH, 'utf8').trim() || null;
+  } catch (e) { etag = null; }
+  console.log('[SafeRoute] Checking CSV on GitHub...');
+  try {
+    const r = await httpsGetCond(CSV_URL, etag);
+    if (r.status === 304) {
+      console.log('[SafeRoute] CSV unchanged');
+      return;
+    }
+    if (r.status !== 200) throw new Error('HTTP ' + r.status);
     fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(CSV_PATH, buf);
-    const csvText = buf.toString('utf8');
-    allAlerts = parseCSV(csvText);
-    statsCache = computeStats(allAlerts);
-    console.log(`[SafeRoute] Loaded ${allAlerts.length} alerts from CSV`);
+    fs.writeFileSync(CSV_PATH, r.buf);
+    if (r.etag) fs.writeFileSync(ETAG_PATH, r.etag);
+    const t0 = Date.now();
+    setAlerts(parseCSV(r.buf.toString('utf8')));
+    console.log(`[SafeRoute] Loaded ${allAlerts.length} alerts from CSV in ${Date.now() - t0}ms`);
   } catch (e) {
     console.error('[SafeRoute] CSV download failed:', e.message);
-    // Try local file
-    if (fs.existsSync(CSV_PATH)) {
-      console.log('[SafeRoute] Using cached CSV...');
-      const csvText = fs.readFileSync(CSV_PATH, 'utf8');
-      allAlerts = parseCSV(csvText);
-      statsCache = computeStats(allAlerts);
-      console.log(`[SafeRoute] Loaded ${allAlerts.length} alerts from cache`);
-    }
+    if (!allAlerts.length) loadCachedCSV();
   }
 }
 
@@ -703,11 +769,14 @@ const server = http.createServer(async (req, res) => {
 
 async function start() {
   console.log('[SafeRoute] Starting API server...');
-  await loadCSV();
+  // Serve from the cached CSV right away and refresh from GitHub in the background.
+  const fromCache = loadCachedCSV();
+  if (!fromCache) await loadCSV();
 
   server.listen(PORT, '127.0.0.1', () => {
     console.log(`[SafeRoute] API server listening on 127.0.0.1:${PORT}`);
   });
+  if (fromCache) loadCSV().catch(e => console.error('[SafeRoute] Background refresh failed:', e.message));
 
   // Refresh CSV every 6 hours
   setInterval(loadCSV, REFRESH_INTERVAL);
